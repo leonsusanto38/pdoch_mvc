@@ -1,6 +1,6 @@
 <?php
 // Define global BASE_URL constant
-define('BASE_URL', 'http://192.168.0.165/pdoch');
+define('BASE_URL', 'http://192.168.7.144:8080/pdoch');
 
 // Register PSR-4 Autoloader
 spl_autoload_register(function ($class) {

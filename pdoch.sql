@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 17, 2026 at 05:07 AM
+-- Generation Time: Jun 17, 2026 at 06:14 AM
 -- Server version: 10.4.32-MariaDB
--- PHP Version: 8.2.12
+-- PHP Version: 8.4.13
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -216,6 +216,140 @@ INSERT INTO `news` (`id`, `title`, `content`, `image`, `created_by`, `created_at
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `pl_battle_logs`
+--
+
+CREATE TABLE `pl_battle_logs` (
+  `id` int(11) NOT NULL,
+  `game_session_id` int(11) NOT NULL,
+  `player_session_id` int(11) NOT NULL,
+  `action_type` enum('move','attack','skip','auto_skip') NOT NULL,
+  `target_player_session_id` int(11) DEFAULT NULL,
+  `damage_dealt` int(11) NOT NULL DEFAULT 0,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pl_game_sessions`
+--
+
+CREATE TABLE `pl_game_sessions` (
+  `id` int(11) NOT NULL,
+  `game_code` varchar(6) NOT NULL,
+  `game_master_user_id` int(11) NOT NULL,
+  `status` enum('waiting','team_assign','discussion_role','discussion_strategy','battle','finished') NOT NULL DEFAULT 'waiting',
+  `current_turn_player_session_id` int(11) DEFAULT NULL,
+  `turn_timer_end` datetime DEFAULT NULL,
+  `discussion_timer_end` datetime DEFAULT NULL,
+  `team_a_name` varchar(100) DEFAULT 'Team A',
+  `team_b_name` varchar(100) DEFAULT 'Team B',
+  `winner_team` enum('A','B') DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pl_game_sessions`
+--
+
+INSERT INTO `pl_game_sessions` (`id`, `game_code`, `game_master_user_id`, `status`, `current_turn_player_session_id`, `turn_timer_end`, `discussion_timer_end`, `team_a_name`, `team_b_name`, `winner_team`, `created_at`, `updated_at`) VALUES
+(1, 'HU5Z2X', 2, 'discussion_role', NULL, NULL, '2026-06-17 11:14:12', 'Team A', 'Team B', NULL, '2026-06-17 04:07:19', '2026-06-17 04:12:12');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pl_player_sessions`
+--
+
+CREATE TABLE `pl_player_sessions` (
+  `id` int(11) NOT NULL,
+  `game_session_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `team` enum('A','B') DEFAULT NULL,
+  `pl_role_id` int(11) DEFAULT NULL,
+  `turn_order` int(11) DEFAULT NULL,
+  `current_hp` int(11) DEFAULT NULL,
+  `is_alive` tinyint(1) NOT NULL DEFAULT 1,
+  `joined_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pl_player_sessions`
+--
+
+INSERT INTO `pl_player_sessions` (`id`, `game_session_id`, `user_id`, `team`, `pl_role_id`, `turn_order`, `current_hp`, `is_alive`, `joined_at`) VALUES
+(1, 1, 3, 'A', NULL, NULL, NULL, 1, '2026-06-17 04:10:10'),
+(2, 1, 6, 'B', 1, NULL, 12, 1, '2026-06-17 04:11:47');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pl_player_stats`
+--
+
+CREATE TABLE `pl_player_stats` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `total_match` int(11) NOT NULL DEFAULT 0,
+  `total_win` int(11) NOT NULL DEFAULT 0,
+  `total_lose` int(11) NOT NULL DEFAULT 0,
+  `total_damage_given` int(11) NOT NULL DEFAULT 0,
+  `total_damage_taken` int(11) NOT NULL DEFAULT 0,
+  `total_kill` int(11) NOT NULL DEFAULT 0,
+  `total_death` int(11) NOT NULL DEFAULT 0,
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pl_roles`
+--
+
+CREATE TABLE `pl_roles` (
+  `id` int(11) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `base_attack` int(11) NOT NULL COMMENT 'Base ATK (+ dice in game)',
+  `base_hp` int(11) NOT NULL COMMENT 'Base HP already calculated (base_def ├ù 4)',
+  `base_movement` int(11) NOT NULL COMMENT 'Base movement (+ dice in game)',
+  `range_cells` int(11) NOT NULL COMMENT 'Attack range in cells (fixed)',
+  `description` text DEFAULT NULL,
+  `created_by` int(11) DEFAULT 1,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `pl_roles`
+--
+
+INSERT INTO `pl_roles` (`id`, `name`, `base_attack`, `base_hp`, `base_movement`, `range_cells`, `description`, `created_by`, `created_at`, `updated_at`) VALUES
+(1, 'Fighter', 3, 12, 2, 1, 'Pejuang garis depan dengan HP tinggi dan serangan seimbang. Andalan tim dalam pertempuran jarak dekat.', 1, '2026-06-17 04:05:11', '2026-06-17 04:05:11'),
+(2, 'Marksman', 4, 4, 3, 2, 'Penembak jitu dengan serangan tinggi dan range 2, namun sangat rentan terhadap serangan langsung.', 1, '2026-06-17 04:05:11', '2026-06-17 04:05:11'),
+(3, 'Assassin', 5, 4, 2, 1, 'Pembunuh bayaran dengan damage tertinggi. HP sangat rendah, memerlukan posisi yang tepat untuk menyerang.', 1, '2026-06-17 04:05:11', '2026-06-17 04:05:11'),
+(4, 'Wizard', 4, 4, 3, 2, 'Penyihir dengan kemampuan serangan jarak jauh yang mematikan. Mobilitas tinggi dengan sihir kuat.', 1, '2026-06-17 04:05:11', '2026-06-17 04:05:11'),
+(5, 'Tank', 1, 16, 3, 1, 'Benteng tim dengan HP tertinggi. Damage sangat rendah namun mampu menahan serangan musuh dalam waktu lama.', 1, '2026-06-17 04:05:11', '2026-06-17 04:05:11'),
+(6, 'Cleric', 2, 8, 4, 3, 'Pendukung tim dengan mobilitas tertinggi dan range serangan terluas. Sangat fleksibel di segala posisi.', 1, '2026-06-17 04:05:11', '2026-06-17 04:05:11');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `pl_role_pick_stats`
+--
+
+CREATE TABLE `pl_role_pick_stats` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `pl_role_id` int(11) NOT NULL,
+  `pick_count` int(11) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `roles`
 --
 
@@ -236,7 +370,8 @@ INSERT INTO `roles` (`id`, `name`, `id_user_created`, `id_user_updated`, `create
 (1, 'Admin', 1, NULL, '2026-06-13 17:54:49', NULL),
 (2, 'Jemaat', 1, NULL, '2026-06-13 17:54:49', NULL),
 (3, 'Pelayan', 1, NULL, '2026-06-13 17:54:49', NULL),
-(4, 'Aktivis', 1, NULL, '2026-06-13 17:54:49', NULL);
+(4, 'Aktivis', 1, NULL, '2026-06-13 17:54:49', NULL),
+(5, 'Dewasa Muda', 1, NULL, '2026-06-17 11:05:11', NULL);
 
 -- --------------------------------------------------------
 
@@ -356,7 +491,13 @@ INSERT INTO `user_role` (`id`, `id_user`, `id_role`, `id_user_created`, `id_user
 (31, 9, 2, 2, NULL, '2026-06-13 18:59:33', NULL),
 (32, 10, 2, 2, NULL, '2026-06-13 19:00:43', NULL),
 (33, 11, 2, 2, NULL, '2026-06-13 19:01:48', NULL),
-(34, 12, 2, 2, NULL, '2026-06-13 19:03:50', NULL);
+(34, 12, 2, 2, NULL, '2026-06-13 19:03:50', NULL),
+(35, 2, 5, 1, NULL, '2026-06-17 11:05:11', NULL),
+(36, 3, 5, 1, NULL, '2026-06-17 11:05:11', NULL),
+(37, 5, 5, 1, NULL, '2026-06-17 11:05:11', NULL),
+(38, 6, 5, 1, NULL, '2026-06-17 11:05:11', NULL),
+(39, 7, 5, 1, NULL, '2026-06-17 11:05:11', NULL),
+(40, 8, 5, 1, NULL, '2026-06-17 11:05:11', NULL);
 
 --
 -- Indexes for dumped tables
@@ -421,6 +562,54 @@ ALTER TABLE `event_evaluations`
 ALTER TABLE `news`
   ADD PRIMARY KEY (`id`),
   ADD KEY `created_by` (`created_by`);
+
+--
+-- Indexes for table `pl_battle_logs`
+--
+ALTER TABLE `pl_battle_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `game_session_id` (`game_session_id`),
+  ADD KEY `player_session_id` (`player_session_id`),
+  ADD KEY `target_player_session_id` (`target_player_session_id`);
+
+--
+-- Indexes for table `pl_game_sessions`
+--
+ALTER TABLE `pl_game_sessions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `game_code` (`game_code`),
+  ADD KEY `game_master_user_id` (`game_master_user_id`);
+
+--
+-- Indexes for table `pl_player_sessions`
+--
+ALTER TABLE `pl_player_sessions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `game_session_id` (`game_session_id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `pl_role_id` (`pl_role_id`);
+
+--
+-- Indexes for table `pl_player_stats`
+--
+ALTER TABLE `pl_player_stats`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `pl_roles`
+--
+ALTER TABLE `pl_roles`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `created_by` (`created_by`);
+
+--
+-- Indexes for table `pl_role_pick_stats`
+--
+ALTER TABLE `pl_role_pick_stats`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_user_role` (`user_id`,`pl_role_id`),
+  ADD KEY `pl_role_id` (`pl_role_id`);
 
 --
 -- Indexes for table `roles`
@@ -504,10 +693,46 @@ ALTER TABLE `news`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `pl_battle_logs`
+--
+ALTER TABLE `pl_battle_logs`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `pl_game_sessions`
+--
+ALTER TABLE `pl_game_sessions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+
+--
+-- AUTO_INCREMENT for table `pl_player_sessions`
+--
+ALTER TABLE `pl_player_sessions`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `pl_player_stats`
+--
+ALTER TABLE `pl_player_stats`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `pl_roles`
+--
+ALTER TABLE `pl_roles`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `pl_role_pick_stats`
+--
+ALTER TABLE `pl_role_pick_stats`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `roles`
 --
 ALTER TABLE `roles`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `service_schedules`
@@ -525,7 +750,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `user_role`
 --
 ALTER TABLE `user_role`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- Constraints for dumped tables
@@ -583,6 +808,47 @@ ALTER TABLE `event_evaluations`
 --
 ALTER TABLE `news`
   ADD CONSTRAINT `news_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Constraints for table `pl_battle_logs`
+--
+ALTER TABLE `pl_battle_logs`
+  ADD CONSTRAINT `pl_battle_logs_ibfk_1` FOREIGN KEY (`game_session_id`) REFERENCES `pl_game_sessions` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `pl_battle_logs_ibfk_2` FOREIGN KEY (`player_session_id`) REFERENCES `pl_player_sessions` (`id`),
+  ADD CONSTRAINT `pl_battle_logs_ibfk_3` FOREIGN KEY (`target_player_session_id`) REFERENCES `pl_player_sessions` (`id`);
+
+--
+-- Constraints for table `pl_game_sessions`
+--
+ALTER TABLE `pl_game_sessions`
+  ADD CONSTRAINT `pl_game_sessions_ibfk_1` FOREIGN KEY (`game_master_user_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `pl_player_sessions`
+--
+ALTER TABLE `pl_player_sessions`
+  ADD CONSTRAINT `pl_player_sessions_ibfk_1` FOREIGN KEY (`game_session_id`) REFERENCES `pl_game_sessions` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `pl_player_sessions_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `pl_player_sessions_ibfk_3` FOREIGN KEY (`pl_role_id`) REFERENCES `pl_roles` (`id`);
+
+--
+-- Constraints for table `pl_player_stats`
+--
+ALTER TABLE `pl_player_stats`
+  ADD CONSTRAINT `pl_player_stats_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `pl_roles`
+--
+ALTER TABLE `pl_roles`
+  ADD CONSTRAINT `pl_roles_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `pl_role_pick_stats`
+--
+ALTER TABLE `pl_role_pick_stats`
+  ADD CONSTRAINT `pl_role_pick_stats_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `pl_role_pick_stats_ibfk_2` FOREIGN KEY (`pl_role_id`) REFERENCES `pl_roles` (`id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `roles`
