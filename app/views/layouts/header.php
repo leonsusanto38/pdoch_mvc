@@ -51,7 +51,7 @@ function isActive($page, $currentPage) {
             </a>
           </li>
           
-          <?php if ($isLoggedIn): ?>
+            <?php if ($isLoggedIn): ?>
             <li class="nav-item">
               <a class="nav-link <?= isActive('division', $currentPage) ?>" href="<?= BASE_URL ?>/division">
                 <i class="bi bi-briefcase"></i> Divisi Saya
@@ -62,6 +62,13 @@ function isActive($page, $currentPage) {
                 <i class="bi bi-calendar-check"></i> Jadwal Pelayanan
               </a>
             </li>
+            <?php if (Session::hasAnyRole(['Dewasa Muda', 'Admin'])): ?>
+              <li class="nav-item">
+                <a class="nav-link <?= isActive('games', $currentPage) ?>" href="<?= BASE_URL ?>/games">
+                  <i class="bi bi-controller"></i> Games
+                </a>
+              </li>
+            <?php endif; ?>
             <?php if (Session::hasAnyRole(['Admin', 'Pelayan'])): ?>
               <li class="nav-item">
                 <a class="nav-link <?= isActive('social', $currentPage) ?>" href="<?= BASE_URL ?>/social">
@@ -71,7 +78,6 @@ function isActive($page, $currentPage) {
             <?php endif; ?>
           <?php endif; ?>
 
-          <!-- Admin Panels Dropdown -->
           <?php if ($isAdmin): ?>
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle text-primary fw-bold" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -111,12 +117,18 @@ function isActive($page, $currentPage) {
                 </li>
                 <li>
                   <a class="dropdown-item py-2" href="<?= BASE_URL ?>/manage-news">
-                    <i class="bi bi-newspaper text-info me-2"></i> Kelola Berita & Warta
+                    <i class="bi bi-newspaper text-info me-2"></i> Kelola Berita &amp; Warta
                   </a>
                 </li>
                 <li>
                   <a class="dropdown-item py-2" href="<?= BASE_URL ?>/manage-event">
-                    <i class="bi bi-calendar-check-fill text-warning me-2"></i> Kelola Event & Ibadah
+                    <i class="bi bi-calendar-check-fill text-warning me-2"></i> Kelola Event &amp; Ibadah
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item py-2" href="<?= BASE_URL ?>/manage-pl-roles">
+                    <i class="bi bi-joystick text-purple me-2" style="color:#8b5cf6"></i> Kelola Role Pilar Legends
                   </a>
                 </li>
               </ul>
@@ -166,7 +178,7 @@ function isActive($page, $currentPage) {
   <div class="container-lg mt-3">
     <?php if ($successMsg = Session::getFlash('success')): ?>
       <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i> <?= htmlspecialchars($successMsg) ?>
+        <i class="bi bi-check-circle-fill me-2"></i> <?= $successMsg ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     <?php endif; ?>
