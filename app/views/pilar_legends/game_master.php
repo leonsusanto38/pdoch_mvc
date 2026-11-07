@@ -333,6 +333,24 @@ $teamB = array_values(array_filter($players, fn($p) => $p['team'] === 'B'));
   .section-tab.active {
     display: block;
   }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    display: inline-block;
+  }
+
+  .qr-holder {
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0;
+  }
+
+  .join-link a {
+    word-break: break-all;
+  }
 </style>
 
 <!-- Top Bar -->
@@ -349,8 +367,8 @@ $teamB = array_values(array_filter($players, fn($p) => $p['team'] === 'B'));
 
   <div class="d-flex align-items-center gap-2 flex-wrap">
     <span class="status-badge" style="color:<?= $st['color'] ?>;background:<?= $st['color'] ?>22;">
-      <span style="width:8px;height:8px;border-radius:50%;background:<?= $st['color'] ?>;display:inline-block;"></span>
-      <?= $st['label'] ?>
+      <span class="status-dot"></span>
+      <span class="status-label"><?= $st['label'] ?></span>
     </span>
     <span class="badge bg-white text-dark fw-bold"><?= count($players) ?> Player(s)</span>
     <a href="<?= htmlspecialchars($dashUrl) ?>" target="_blank"
@@ -375,7 +393,7 @@ $teamB = array_values(array_filter($players, fn($p) => $p['team'] === 'B'));
           <div class="qr-code-box mb-3">
             <div class="text-muted small mb-1">GAME CODE</div>
             <div class="game-code-display"><?= $gameCode ?></div>
-            <div id="qrcode" style="margin: 1rem auto; display:inline-block;"></div>
+            <div id="qrcode" class="qr-holder"></div>
             <div class="text-muted" style="font-size:0.75rem;">Bagikan kode atau scan QR di atas</div>
           </div>
           <div id="player-list-waiting">
@@ -708,8 +726,8 @@ $teamB = array_values(array_filter($players, fn($p) => $p['team'] === 'B'));
       </div>
       <div class="panel-body text-center">
         <div class="game-code-display mb-2"><?= $gameCode ?></div>
-        <div id="qr-sidebar" style="text-align:center;"></div>
-        <small class="text-muted d-block mt-2">
+        <div id="qr-sidebar" class="qr-holder"></div>
+        <small class="text-muted d-block mt-2 join-link">
           Join link: <a href="<?= htmlspecialchars($joinUrl) ?>" target="_blank" style="font-size:0.7rem;"><?= htmlspecialchars($joinUrl) ?></a>
         </small>
       </div>
@@ -758,6 +776,7 @@ $teamB = array_values(array_filter($players, fn($p) => $p['team'] === 'B'));
   let pollInterval;
   let timerInterval;
   let turnOrderDirty = false;
+  const STATUS_INFO = <?= json_encode($statusLabels) ?>;
 
   // QR Code generation
   try {
@@ -805,17 +824,16 @@ $teamB = array_values(array_filter($players, fn($p) => $p['team'] === 'B'));
 
     showSection(session.status);
 
-    // Update status badge text
-    document.querySelectorAll('.status-badge span:last-child').forEach(el => {
-      const statusMap = {
-        waiting: 'Menunggu Player',
-        team_assign: 'Pembagian Tim',
-        discussion_role: 'Diskusi Role',
-        discussion_strategy: 'Diskusi Strategi',
-        battle: 'Battle!',
-        finished: 'Selesai'
-      };
-      el.textContent = statusMap[session.status] || session.status;
+    // Update status badge (teks + warna)
+    const st = STATUS_INFO[session.status] || {
+      label: session.status,
+      color: '#6b7280'
+    };
+    document.querySelectorAll('.status-badge').forEach(badge => {
+      badge.style.color = st.color;
+      badge.style.background = st.color + '22';
+      const label = badge.querySelector('.status-label');
+      if (label) label.textContent = st.label;
     });
 
     // Update player count
