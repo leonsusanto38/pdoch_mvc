@@ -103,7 +103,7 @@ class App
             'assign-team'      => 'assignTeam',
             'randomize-teams'  => 'randomizeTeams',
             'set-player-role'  => 'setPlayerRole',
-            'auto-assign-roles'=> 'autoAssignRoles',
+            'auto-assign-roles' => 'autoAssignRoles',
             'set-turn-order'   => 'setTurnOrder',
             'randomize-turns'  => 'randomizeTurns',
             'process-action'   => 'processAction',
@@ -130,6 +130,31 @@ class App
         if (!method_exists($controller, $method)) {
             $controller = new \App\Controllers\HomeController();
             $method = 'notFound';
+        }
+
+        // --- Proteksi CSRF & aksi hapus wajib POST ---
+        $isPost = ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST';
+
+        if (in_array($method, ['delete', 'removeMember'], true) && !$isPost) {
+            Session::setFlash('error', 'Aksi hapus harus lewat tombol di halaman.');
+            header('Location: ' . BASE_URL . '/home');
+            exit();
+        }
+
+        if ($isPost && !Session::verifyCsrf()) {
+            if ($page === 'pilar-legends') {
+                http_response_code(419);
+                header('Content-Type: application/json');
+                echo json_encode(['success' => false, 'message' => 'Token tidak valid. Muat ulang halaman.']);
+                exit();
+            }
+            $back = $_SERVER['HTTP_REFERER'] ?? '';
+            if (strpos($back, BASE_URL) !== 0) {
+                $back = BASE_URL . '/home';
+            }
+            Session::setFlash('error', 'Sesi form kedaluwarsa. Silakan muat ulang halaman lalu coba lagi.');
+            header('Location: ' . $back);
+            exit();
         }
 
         call_user_func([$controller, $method]);

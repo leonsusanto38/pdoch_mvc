@@ -12,6 +12,7 @@
         <h5 class="fw-bold text-dark mb-4">Pilih Role User</h5>
 
         <form action="<?= BASE_URL ?>/manage-user?action=update-roles&id=<?= $user['id'] ?>" method="POST">
+          <?= csrf_field() ?>
           <div class="mb-4">
             <?php if (empty($roles)): ?>
               <div class="alert alert-warning">Belum ada role terdaftar. Silakan buat role terlebih dahulu.</div>

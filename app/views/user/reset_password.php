@@ -10,6 +10,7 @@
     <div class="card border-0 shadow-sm bg-white p-4">
       <div class="card-body">
         <form action="<?= BASE_URL ?>/manage-user?action=reset-password&id=<?= $user['id'] ?>" method="POST">
+          <?= csrf_field() ?>
           <div class="mb-4">
             <label for="password" class="form-label small fw-bold">Password Baru</label>
             <input type="password" class="form-control" id="password" name="password" placeholder="Minimal 6 karakter" required autofocus>

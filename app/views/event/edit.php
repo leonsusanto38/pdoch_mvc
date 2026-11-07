@@ -8,6 +8,7 @@
 <div class="card border-0 shadow-sm bg-white p-4">
   <div class="card-body">
     <form action="<?= BASE_URL ?>/manage-event?action=update&id=<?= $event['id'] ?>" method="POST">
+      <?= csrf_field() ?>
       <div class="row g-3">
         <div class="col-12">
           <label for="name" class="form-label small fw-bold">Nama Event / Ibadah</label>
@@ -17,13 +18,13 @@
         <div class="col-md-6">
           <label for="time_start" class="form-label small fw-bold">Waktu Mulai</label>
           <input type="datetime-local" class="form-control" id="time_start" name="time_start"
-                 value="<?= date('Y-m-d\TH:i', strtotime($event['time_start'])) ?>" required>
+            value="<?= date('Y-m-d\TH:i', strtotime($event['time_start'])) ?>" required>
         </div>
 
         <div class="col-md-6">
           <label for="time_end" class="form-label small fw-bold">Waktu Selesai</label>
           <input type="datetime-local" class="form-control" id="time_end" name="time_end"
-                 value="<?= date('Y-m-d\TH:i', strtotime($event['time_end'])) ?>" required>
+            value="<?= date('Y-m-d\TH:i', strtotime($event['time_end'])) ?>" required>
         </div>
 
         <div class="col-12">

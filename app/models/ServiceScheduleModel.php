@@ -1,17 +1,21 @@
 <?php
+
 namespace App\Models;
 
 use App\Core\Database;
 use PDO;
 
-class ServiceScheduleModel {
+class ServiceScheduleModel
+{
     private $db;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function getAll() {
+    public function getAll()
+    {
         $stmt = $this->db->prepare("
             SELECT s.*, u.name as user_name, u.username as user_username
             FROM service_schedules s
@@ -22,7 +26,8 @@ class ServiceScheduleModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getByUser($userId) {
+    public function getByUser($userId)
+    {
         $stmt = $this->db->prepare("
             SELECT s.*, u.name as user_name, u.username as user_username
             FROM service_schedules s
@@ -34,7 +39,8 @@ class ServiceScheduleModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getOutstandingByUser($userId) {
+    public function getOutstandingByUser($userId)
+    {
         $stmt = $this->db->prepare("
             SELECT s.*, u.name as user_name, u.username as user_username
             FROM service_schedules s
@@ -46,7 +52,21 @@ class ServiceScheduleModel {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    public function getById($id) {
+    public function getAllOutstanding()
+    {
+        $stmt = $this->db->prepare("
+            SELECT s.*, u.name as user_name, u.username as user_username
+            FROM service_schedules s
+            JOIN users u ON s.user_id = u.id
+            WHERE s.date >= CURDATE()
+            ORDER BY s.date ASC, s.type DESC
+        ");
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public function getById($id)
+    {
         $stmt = $this->db->prepare("
             SELECT s.*, u.name as user_name, u.username as user_username
             FROM service_schedules s
@@ -57,7 +77,8 @@ class ServiceScheduleModel {
         return $stmt->fetch(PDO::FETCH_ASSOC);
     }
 
-    public function create($data) {
+    public function create($data)
+    {
         $stmt = $this->db->prepare("
             INSERT INTO service_schedules (user_id, role, date, type, location, notes, description)
             VALUES (:user_id, :role, :date, :type, :location, :notes, :description)
@@ -73,7 +94,8 @@ class ServiceScheduleModel {
         ]);
     }
 
-    public function update($id, $data) {
+    public function update($id, $data)
+    {
         $stmt = $this->db->prepare("
             UPDATE service_schedules 
             SET user_id = :user_id, role = :role, date = :date, type = :type, 
@@ -92,7 +114,8 @@ class ServiceScheduleModel {
         ]);
     }
 
-    public function delete($id) {
+    public function delete($id)
+    {
         $stmt = $this->db->prepare("DELETE FROM service_schedules WHERE id = :id");
         return $stmt->execute(['id' => $id]);
     }

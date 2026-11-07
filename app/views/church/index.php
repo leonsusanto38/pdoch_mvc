@@ -29,30 +29,32 @@
                 <tr>
                   <td colspan="5" class="text-center text-muted py-4">Belum ada gereja terdaftar.</td>
                 </tr>
-              <?php else: foreach ($churches as $church): ?>
-                <tr class="<?= ($editChurch && $editChurch['id'] == $church['id']) ? 'table-primary bg-opacity-10' : '' ?>">
-                  <td class="text-center text-muted fw-bold">#<?= $church['id'] ?></td>
-                  <td>
-                    <span class="fw-bold text-dark"><?= htmlspecialchars($church['name']) ?></span>
-                  </td>
-                  <td>
-                    <span class="badge bg-secondary bg-opacity-10 text-secondary"><?= htmlspecialchars($church['denomination_name'] ?? 'Denominasi Lain') ?></span>
-                  </td>
-                  <td>
-                    <span class="text-muted small"><?= htmlspecialchars($church['address'] ?? '-') ?></span>
-                  </td>
-                  <td class="text-center">
-                    <div class="btn-group">
-                      <a href="<?= BASE_URL ?>/manage-church?edit_id=<?= $church['id'] ?>" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-pencil-square"></i>
-                      </a>
-                      <a href="<?= BASE_URL ?>/manage-church?action=delete&id=<?= $church['id'] ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus gereja ini?')">
-                        <i class="bi bi-trash"></i>
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              <?php endforeach; endif; ?>
+                <?php else: foreach ($churches as $church): ?>
+                  <tr class="<?= ($editChurch && $editChurch['id'] == $church['id']) ? 'table-primary bg-opacity-10' : '' ?>">
+                    <td class="text-center text-muted fw-bold">#<?= $church['id'] ?></td>
+                    <td>
+                      <span class="fw-bold text-dark"><?= htmlspecialchars($church['name']) ?></span>
+                    </td>
+                    <td>
+                      <span class="badge bg-secondary bg-opacity-10 text-secondary"><?= htmlspecialchars($church['denomination_name'] ?? 'Denominasi Lain') ?></span>
+                    </td>
+                    <td>
+                      <span class="text-muted small"><?= htmlspecialchars($church['address'] ?? '-') ?></span>
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group">
+                        <a href="<?= BASE_URL ?>/manage-church?edit_id=<?= $church['id'] ?>" class="btn btn-outline-secondary btn-sm">
+                          <i class="bi bi-pencil-square"></i>
+                        </a>
+                        <form action="<?= BASE_URL ?>/manage-church?action=delete&id=<?= $church['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus gereja ini?')">
+                          <?= csrf_field() ?>
+                          <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+              <?php endforeach;
+              endif; ?>
             </tbody>
           </table>
         </div>
@@ -69,6 +71,7 @@
           <p class="text-muted small">Perbarui detail gereja terpilih</p>
 
           <form action="<?= BASE_URL ?>/manage-church?action=update&id=<?= $editChurch['id'] ?>" method="POST">
+            <?= csrf_field() ?>
             <div class="mb-3">
               <label for="church_name" class="form-label small fw-bold">Nama Gereja</label>
               <input type="text" class="form-control" id="church_name" name="name" value="<?= htmlspecialchars($editChurch['name']) ?>" required autofocus>
@@ -103,6 +106,7 @@
           <p class="text-muted small">Hubungkan gereja baru dengan denominasinya</p>
 
           <form action="<?= BASE_URL ?>/manage-church?action=save" method="POST">
+            <?= csrf_field() ?>
             <div class="mb-3">
               <label for="church_name" class="form-label small fw-bold">Nama Gereja</label>
               <input type="text" class="form-control" id="church_name" name="name" placeholder="Contoh: GKI Citra Harmoni" required>

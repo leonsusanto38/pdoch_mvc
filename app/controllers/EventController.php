@@ -1,28 +1,34 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Session;
 
-class EventController extends Controller {
+class EventController extends Controller
+{
     private $eventModel;
     private $userModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         $this->eventModel = $this->model('EventModel');
         $this->userModel = $this->model('UserModel');
     }
 
     // Public: list events for all users (no login required)
-    public function userEvents() {
+    public function userEvents()
+    {
         $upcomingEvents = $this->eventModel->getUpcomingEvents(20);
         $pastEvents = $this->eventModel->getPastEvents(20);
 
         // Fetch evaluations for past events
         $evaluationModel = $this->model('EventEvaluationModel');
+        $evals = $evaluationModel->getByEvents(array_column($pastEvents, 'id'));
         foreach ($pastEvents as &$event) {
-            $event['evaluations'] = $evaluationModel->getByEvent($event['id']);
+            $event['evaluations'] = $evals[$event['id']] ?? [];
         }
+        unset($event);
 
         $this->view('event/user_events', [
             'upcomingEvents' => $upcomingEvents,
@@ -31,7 +37,8 @@ class EventController extends Controller {
     }
 
     // Admin: manage events
-    public function index() {
+    public function index()
+    {
         Session::requireAdmin();
         $events = $this->eventModel->getAll();
         $users = $this->userModel->getAll();
@@ -41,13 +48,15 @@ class EventController extends Controller {
         ]);
     }
 
-    public function create() {
+    public function create()
+    {
         Session::requireAdmin();
         $users = $this->userModel->getAll();
         $this->view('event/create', ['users' => $users]);
     }
 
-    public function save() {
+    public function save()
+    {
         Session::requireAdmin();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('manage-event');
@@ -79,10 +88,13 @@ class EventController extends Controller {
         $this->redirect('manage-event');
     }
 
-    public function edit() {
+    public function edit()
+    {
         Session::requireAdmin();
         $id = $_GET['id'] ?? null;
-        if (!$id) { $this->redirect('manage-event'); }
+        if (!$id) {
+            $this->redirect('manage-event');
+        }
 
         $event = $this->eventModel->getById($id);
         if (!$event) {
@@ -93,10 +105,13 @@ class EventController extends Controller {
         $this->view('event/edit', ['event' => $event, 'users' => $users]);
     }
 
-    public function update() {
+    public function update()
+    {
         Session::requireAdmin();
         $id = $_GET['id'] ?? null;
-        if (!$id || $_SERVER['REQUEST_METHOD'] !== 'POST') { $this->redirect('manage-event'); }
+        if (!$id || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('manage-event');
+        }
 
         $name = trim($_POST['name'] ?? '');
         $timeStart = $_POST['time_start'] ?? '';
@@ -124,10 +139,13 @@ class EventController extends Controller {
         $this->redirect('manage-event');
     }
 
-    public function delete() {
+    public function delete()
+    {
         Session::requireAdmin();
         $id = $_GET['id'] ?? null;
-        if (!$id) { $this->redirect('manage-event'); }
+        if (!$id) {
+            $this->redirect('manage-event');
+        }
 
         if ($this->eventModel->delete($id)) {
             Session::setFlash('success', 'Event berhasil dihapus.');
@@ -138,7 +156,8 @@ class EventController extends Controller {
     }
 
     // Auto-generate recurring worship events for a chosen month
-    public function generate() {
+    public function generate()
+    {
         Session::requireAdmin();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('manage-event');
@@ -155,14 +174,15 @@ class EventController extends Controller {
         $count = $this->eventModel->generateRecurringEvents($year, $month, Session::get('user_id'));
 
         if ($count > 0) {
-            Session::setFlash('success', "{$count} jadwal ibadah rutin berhasil di-generate untuk bulan " . date('F Y', mktime(0,0,0,$month,1,$year)) . ".");
+            Session::setFlash('success', "{$count} jadwal ibadah rutin berhasil di-generate untuk bulan " . date('F Y', mktime(0, 0, 0, $month, 1, $year)) . ".");
         } else {
             Session::setFlash('error', 'Tidak ada jadwal baru yang di-generate. Mungkin sudah ada di database.');
         }
         $this->redirect('manage-event');
     }
 
-    public function addEvaluation() {
+    public function addEvaluation()
+    {
         Session::requireLogin();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('events');

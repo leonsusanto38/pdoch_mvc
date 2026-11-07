@@ -29,41 +29,48 @@
     </thead>
     <tbody>
       <?php if (empty($events)): ?>
-        <tr><td colspan="6" class="text-center text-muted py-4">Belum ada event. Tambahkan atau gunakan fitur Generate Otomatis.</td></tr>
-      <?php else: $no = 1; foreach ($events as $event):
-        $ts = strtotime($event['time_start']);
-        $dayNames = ['Sunday'=>'Minggu','Monday'=>'Senin','Tuesday'=>'Selasa','Wednesday'=>'Rabu','Thursday'=>'Kamis','Friday'=>'Jumat','Saturday'=>'Sabtu'];
-        $dayIndo = $dayNames[date('l', $ts)] ?? date('l',$ts);
-        $isPast = $ts < time();
-      ?>
-        <tr class="<?= $isPast ? 'text-muted' : '' ?>">
-          <td class="text-center fw-bold text-muted"><?= $no++ ?></td>
-          <td>
-            <span class="fw-bold <?= $isPast ? 'text-secondary' : 'text-dark' ?>"><?= htmlspecialchars($event['name']) ?></span>
-            <?php if (!$isPast): ?>
-              <span class="badge bg-success bg-opacity-10 text-success ms-2 small">Mendatang</span>
-            <?php else: ?>
-              <span class="badge bg-secondary bg-opacity-10 text-secondary ms-2 small">Selesai</span>
-            <?php endif; ?>
-          </td>
-          <td>
-            <span class="small"><?= $dayIndo ?>, <?= date('d M Y', $ts) ?></span><br>
-            <span class="text-muted small font-monospace"><?= date('H:i', $ts) ?> WIB</span>
-          </td>
-          <td>
-            <span class="text-muted small font-monospace"><?= date('H:i', strtotime($event['time_end'])) ?> WIB</span>
-          </td>
-          <td>
-            <span class="small text-secondary"><?= htmlspecialchars($event['coordinator_name'] ?? 'PDOCH') ?></span>
-          </td>
-          <td class="text-center">
-            <div class="btn-group">
-              <a href="<?= BASE_URL ?>/manage-event?action=edit&id=<?= $event['id'] ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil-square"></i></a>
-              <a href="<?= BASE_URL ?>/manage-event?action=delete&id=<?= $event['id'] ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Hapus event ini?')"><i class="bi bi-trash"></i></a>
-            </div>
-          </td>
+        <tr>
+          <td colspan="6" class="text-center text-muted py-4">Belum ada event. Tambahkan atau gunakan fitur Generate Otomatis.</td>
         </tr>
-      <?php endforeach; endif; ?>
+        <?php else: $no = 1;
+        foreach ($events as $event):
+          $ts = strtotime($event['time_start']);
+          $dayNames = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
+          $dayIndo = $dayNames[date('l', $ts)] ?? date('l', $ts);
+          $isPast = $ts < time();
+        ?>
+          <tr class="<?= $isPast ? 'text-muted' : '' ?>">
+            <td class="text-center fw-bold text-muted"><?= $no++ ?></td>
+            <td>
+              <span class="fw-bold <?= $isPast ? 'text-secondary' : 'text-dark' ?>"><?= htmlspecialchars($event['name']) ?></span>
+              <?php if (!$isPast): ?>
+                <span class="badge bg-success bg-opacity-10 text-success ms-2 small">Mendatang</span>
+              <?php else: ?>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary ms-2 small">Selesai</span>
+              <?php endif; ?>
+            </td>
+            <td>
+              <span class="small"><?= $dayIndo ?>, <?= date('d M Y', $ts) ?></span><br>
+              <span class="text-muted small font-monospace"><?= date('H:i', $ts) ?> WIB</span>
+            </td>
+            <td>
+              <span class="text-muted small font-monospace"><?= date('H:i', strtotime($event['time_end'])) ?> WIB</span>
+            </td>
+            <td>
+              <span class="small text-secondary"><?= htmlspecialchars($event['coordinator_name'] ?? 'PDOCH') ?></span>
+            </td>
+            <td class="text-center">
+              <div class="btn-group">
+                <a href="<?= BASE_URL ?>/manage-event?action=edit&id=<?= $event['id'] ?>" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil-square"></i></a>
+                <form action="<?= BASE_URL ?>/manage-event?action=delete&id=<?= $event['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Hapus event ini?')">
+                  <?= csrf_field() ?>
+                  <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+      <?php endforeach;
+      endif; ?>
     </tbody>
   </table>
 </div>
@@ -81,12 +88,13 @@
       <div class="modal-body">
         <p class="text-muted small mb-4">
           Fitur ini akan otomatis membuat jadwal untuk:
-          <ul class="mt-2">
-            <li><strong>Ibadah Bulanan PDOCH</strong> – Kamis ke-2 setiap bulan</li>
-            <li><strong>Ibadah Dewasa Muda</strong> – Setiap Rabu, kecuali Rabu yang seminggu dengan Kamis ke-2</li>
-          </ul>
+        <ul class="mt-2">
+          <li><strong>Ibadah Bulanan PDOCH</strong> – Kamis ke-2 setiap bulan</li>
+          <li><strong>Ibadah Dewasa Muda</strong> – Setiap Rabu, kecuali Rabu yang seminggu dengan Kamis ke-2</li>
+        </ul>
         </p>
         <form action="<?= BASE_URL ?>/manage-event?action=generate" method="POST">
+          <?= csrf_field() ?>
           <div class="row g-3">
             <div class="col-6">
               <label for="gen_year" class="form-label small fw-bold">Tahun</label>
@@ -96,10 +104,10 @@
               <label for="gen_month" class="form-label small fw-bold">Bulan</label>
               <select class="form-select" id="gen_month" name="month" required>
                 <?php
-                  $months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-                  foreach ($months as $i => $m):
+                $months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                foreach ($months as $i => $m):
                 ?>
-                  <option value="<?= $i+1 ?>" <?= ($i+1) == date('m') ? 'selected' : '' ?>><?= $m ?></option>
+                  <option value="<?= $i + 1 ?>" <?= ($i + 1) == date('m') ? 'selected' : '' ?>><?= $m ?></option>
                 <?php endforeach; ?>
               </select>
             </div>

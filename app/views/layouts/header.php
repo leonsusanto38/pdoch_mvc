@@ -1,5 +1,7 @@
 <?php
+
 use App\Core\Session;
+
 $currentUser = Session::get('user_id');
 $currentName = Session::get('name');
 $currentUsername = Session::get('username');
@@ -9,12 +11,14 @@ $isLoggedIn = Session::isLoggedIn();
 
 // Active page logic helper
 $currentPage = $_GET['x'] ?? 'home';
-function isActive($page, $currentPage) {
-    return $currentPage === $page ? 'active' : '';
+function isActive($page, $currentPage)
+{
+  return $currentPage === $page ? 'active' : '';
 }
 ?>
 <!doctype html>
 <html lang="id">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -26,6 +30,7 @@ function isActive($page, $currentPage) {
   <!-- Custom Premium CSS -->
   <link rel="stylesheet" href="<?= BASE_URL ?>/assets/css/style.css">
 </head>
+
 <body>
 
   <!-- Navigation Bar -->
@@ -50,8 +55,8 @@ function isActive($page, $currentPage) {
               <i class="bi bi-calendar-event"></i> Jadwal Ibadah
             </a>
           </li>
-          
-            <?php if ($isLoggedIn): ?>
+
+          <?php if ($isLoggedIn): ?>
             <li class="nav-item">
               <a class="nav-link <?= isActive('division', $currentPage) ?>" href="<?= BASE_URL ?>/division">
                 <i class="bi bi-briefcase"></i> Divisi Saya
@@ -109,7 +114,9 @@ function isActive($page, $currentPage) {
                     <i class="bi bi-grid-fill text-secondary me-2"></i> Kelola Divisi
                   </a>
                 </li>
-                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <hr class="dropdown-divider">
+                </li>
                 <li>
                   <a class="dropdown-item py-2" href="<?= BASE_URL ?>/manage-schedule">
                     <i class="bi bi-calendar-event text-danger me-2"></i> Kelola Jadwal Tugas
@@ -125,7 +132,9 @@ function isActive($page, $currentPage) {
                     <i class="bi bi-calendar-check-fill text-warning me-2"></i> Kelola Event &amp; Ibadah
                   </a>
                 </li>
-                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <hr class="dropdown-divider">
+                </li>
                 <li>
                   <a class="dropdown-item py-2" href="<?= BASE_URL ?>/manage-pl-roles">
                     <i class="bi bi-joystick text-purple me-2" style="color:#8b5cf6"></i> Kelola Role Pilar Legends
@@ -154,7 +163,9 @@ function isActive($page, $currentPage) {
                     <i class="bi bi-person-bounding-box me-2 text-primary"></i> Edit Profil
                   </a>
                 </li>
-                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <hr class="dropdown-divider">
+                </li>
                 <li>
                   <a class="dropdown-item py-2 text-danger" href="<?= BASE_URL ?>/logout">
                     <i class="bi bi-box-arrow-right me-2"></i> Keluar
@@ -178,13 +189,19 @@ function isActive($page, $currentPage) {
   <div class="container-lg mt-3">
     <?php if ($successMsg = Session::getFlash('success')): ?>
       <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
-        <i class="bi bi-check-circle-fill me-2"></i> <?= $successMsg ?>
+        <i class="bi bi-check-circle-fill me-2"></i> <?= htmlspecialchars($successMsg) ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     <?php endif; ?>
     <?php if ($errorMsg = Session::getFlash('error')): ?>
       <div class="alert alert-danger alert-dismissible fade show border-0 shadow-sm" role="alert">
         <i class="bi bi-exclamation-triangle-fill me-2"></i> <?= htmlspecialchars($errorMsg) ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    <?php endif; ?>
+    <?php if ($infoMsg = Session::getFlash('info')): ?>
+      <div class="alert alert-info alert-dismissible fade show border-0 shadow-sm" role="alert">
+        <i class="bi bi-info-circle-fill me-2"></i> <?= htmlspecialchars($infoMsg) ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
       </div>
     <?php endif; ?>

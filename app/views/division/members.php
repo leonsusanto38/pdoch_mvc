@@ -53,6 +53,7 @@
                     </td>
                     <td>
                       <form action="<?= BASE_URL ?>/manage-division?action=update-member&id=<?= $division['id'] ?>&user_id=<?= $member['user_id'] ?>" method="POST" class="d-flex gap-2 align-items-center">
+                        <?= csrf_field() ?>
                         <input type="text" class="form-control form-control-sm" name="role" value="<?= htmlspecialchars($member['role']) ?>" style="max-width:200px;">
                         <button type="submit" class="btn btn-outline-primary btn-sm" title="Simpan Peran">
                           <i class="bi bi-check"></i>
@@ -60,11 +61,10 @@
                       </form>
                     </td>
                     <td class="text-center">
-                      <a href="<?= BASE_URL ?>/manage-division?action=remove-member&id=<?= $division['id'] ?>&user_id=<?= $member['user_id'] ?>"
-                        class="btn btn-outline-danger btn-sm"
-                        onclick="return confirm('Hapus anggota ini dari divisi?')">
-                        <i class="bi bi-person-dash"></i> Hapus
-                      </a>
+                      <form action="<?= BASE_URL ?>/manage-division?action=remove-member&id=<?= $division['id'] ?>&user_id=<?= $member['user_id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Hapus anggota ini dari divisi?')">
+                        <?= csrf_field() ?>
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-person-dash"></i> Hapus</button>
+                      </form>
                     </td>
                   </tr>
               <?php endforeach;
@@ -83,6 +83,7 @@
         <h5 class="fw-bold text-dark mb-3"><i class="bi bi-person-plus-fill"></i> Tambah Anggota</h5>
 
         <form action="<?= BASE_URL ?>/manage-division?action=add-member&id=<?= $division['id'] ?>" method="POST">
+          <?= csrf_field() ?>
           <div class="mb-3">
             <label for="user_id" class="form-label small fw-bold">Pilih User</label>
             <select class="form-select" id="user_id" name="user_id" required>

@@ -8,10 +8,11 @@
 <div class="card border-0 shadow-sm bg-white p-4">
   <div class="card-body">
     <form action="<?= BASE_URL ?>/manage-user?action=update&id=<?= $user['id'] ?>" method="POST">
+      <?= csrf_field() ?>
       <div class="row g-3">
         <!-- Akun Credentials -->
         <h5 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="bi bi-shield-lock"></i> Kredensial Akun</h5>
-        
+
         <div class="col-md-6">
           <label for="name" class="form-label small fw-bold">Nama Lengkap</label>
           <input type="text" class="form-control" id="name" name="name" value="<?= htmlspecialchars($user['name']) ?>" required>

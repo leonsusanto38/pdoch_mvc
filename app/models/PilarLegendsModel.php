@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use App\Core\Database;
@@ -60,7 +61,12 @@ class PilarLegendsModel
 
     public function getSessionById($id): ?array
     {
-        $stmt = $this->db->prepare("SELECT * FROM pl_game_sessions WHERE id = ?");
+        $stmt = $this->db->prepare("
+            SELECT gs.*, u.name AS gm_name
+            FROM pl_game_sessions gs
+            LEFT JOIN users u ON u.id = gs.game_master_user_id
+            WHERE gs.id = ?
+        ");
         $stmt->execute([$id]);
         return $stmt->fetch() ?: null;
     }
@@ -234,33 +240,39 @@ class PilarLegendsModel
 
         $allRoles = $this->getAllRoles();
 
+        // Role yang sudah dipakai, dikelompokkan per tim (1 query)
+        $takenStmt = $this->db->prepare("
+            SELECT team, pl_role_id FROM pl_player_sessions
+            WHERE game_session_id = ? AND pl_role_id IS NOT NULL
+        ");
+        $takenStmt->execute([$sessionId]);
+        $takenByTeam = [];
+        foreach ($takenStmt->fetchAll() as $row) {
+            $takenByTeam[$row['team']][] = (int)$row['pl_role_id'];
+        }
+
+        // Disiapkan sekali, dipakai ulang di dalam loop
+        $prefStmt = $this->db->prepare("
+            SELECT pl_role_id FROM pl_role_pick_stats
+            WHERE user_id = ? ORDER BY pick_count DESC LIMIT 1
+        ");
+
         foreach ($unassigned as $player) {
-            // Get roles already taken by teammates
-            $takenStmt = $this->db->prepare("
-                SELECT pl_role_id FROM pl_player_sessions
-                WHERE game_session_id = ? AND team = ? AND pl_role_id IS NOT NULL AND id != ?
-            ");
-            $takenStmt->execute([$sessionId, $player['team'], $player['id']]);
-            $takenRoleIds = $takenStmt->fetchAll(PDO::FETCH_COLUMN);
+            $taken = $takenByTeam[$player['team']] ?? [];
 
-            // Try player's most-used role first
-            $prefStmt = $this->db->prepare("
-                SELECT pl_role_id FROM pl_role_pick_stats
-                WHERE user_id = ? ORDER BY pick_count DESC LIMIT 1
-            ");
+            // Coba role yang paling sering dipakai player ini
             $prefStmt->execute([$player['user_id']]);
-            $preferredRoleId = $prefStmt->fetchColumn();
+            $roleId = (int)$prefStmt->fetchColumn();
 
-            if ($preferredRoleId && !in_array($preferredRoleId, $takenRoleIds)) {
-                $this->setPlayerRole($player['id'], $preferredRoleId);
-                continue;
+            // Kalau tidak ada / sudah dipakai teman setim, pilih acak dari yang tersisa
+            if (!$roleId || in_array($roleId, $taken, true)) {
+                $available = array_values(array_filter($allRoles, fn($r) => !in_array((int)$r['id'], $taken, true)));
+                if (empty($available)) $available = $allRoles;
+                $roleId = (int)$available[array_rand($available)]['id'];
             }
 
-            // Otherwise pick random available role
-            $available = array_filter($allRoles, fn($r) => !in_array($r['id'], $takenRoleIds));
-            if (empty($available)) $available = $allRoles;
-            $pick = array_values($available)[array_rand(array_values($available))];
-            $this->setPlayerRole($player['id'], $pick['id']);
+            $this->setPlayerRole($player['id'], $roleId);
+            $takenByTeam[$player['team']][] = $roleId;
         }
     }
 
@@ -394,13 +406,16 @@ class PilarLegendsModel
 
         // Apply attack damage
         if ($actionType === 'attack' && $targetSessionId && $damageDealt > 0) {
-            // Update target HP
-            $this->db->prepare("
+            $hit = $this->db->prepare("
                 UPDATE pl_player_sessions
                 SET current_hp = GREATEST(0, current_hp - ?),
-                    is_alive   = CASE WHEN (current_hp - ?) <= 0 THEN 0 ELSE 1 END
-                WHERE id = ?
-            ")->execute([$damageDealt, $damageDealt, $targetSessionId]);
+                    is_alive   = IF(current_hp > 0, 1, 0)
+                WHERE id = ? AND game_session_id = ? AND is_alive = 1
+            ");
+            $hit->execute([$damageDealt, $targetSessionId, $sessionId]);
+            if ($hit->rowCount() === 0) {
+                return ['success' => false, 'message' => 'Target tidak valid atau sudah mati.'];
+            }
         }
 
         // Build description
@@ -528,61 +543,89 @@ class PilarLegendsModel
         $winner  = $session['winner_team'];
         $players = $this->getSessionPlayers($sessionId);
 
-        foreach ($players as $player) {
-            $isWin  = ($player['team'] === $winner) ? 1 : 0;
-            $isLose = $isWin ? 0 : 1;
+        // Damage diberi & diterima untuk SEMUA player dalam 1 query
+        $dmgStmt = $this->db->prepare("
+            SELECT ps.id,
+                   COALESCE(dg.total, 0) AS damage_given,
+                   COALESCE(dt.total, 0) AS damage_taken
+            FROM pl_player_sessions ps
+            LEFT JOIN (
+                SELECT player_session_id, SUM(damage_dealt) AS total
+                FROM pl_battle_logs
+                WHERE game_session_id = ?
+                GROUP BY player_session_id
+            ) dg ON dg.player_session_id = ps.id
+            LEFT JOIN (
+                SELECT target_player_session_id, SUM(damage_dealt) AS total
+                FROM pl_battle_logs
+                WHERE game_session_id = ?
+                GROUP BY target_player_session_id
+            ) dt ON dt.target_player_session_id = ps.id
+            WHERE ps.game_session_id = ?
+        ");
+        $dmgStmt->execute([$sessionId, $sessionId, $sessionId]);
+        $damage = [];
+        foreach ($dmgStmt->fetchAll() as $row) {
+            $damage[$row['id']] = $row;
+        }
 
-            // Damage given
-            $dgStmt = $this->db->prepare("
-                SELECT COALESCE(SUM(damage_dealt), 0) FROM pl_battle_logs WHERE player_session_id = ?
-            ");
-            $dgStmt->execute([$player['id']]);
-            $damageGiven = (int)$dgStmt->fetchColumn();
+        // Kill = serangan TERAKHIR ke target yang akhirnya mati
+        $killStmt = $this->db->prepare("
+            SELECT bl.player_session_id, COUNT(*) AS kills
+            FROM pl_battle_logs bl
+            JOIN (
+                SELECT target_player_session_id, MAX(id) AS last_id
+                FROM pl_battle_logs
+                WHERE game_session_id = ? AND action_type = 'attack' AND damage_dealt > 0
+                GROUP BY target_player_session_id
+            ) last_hit ON last_hit.last_id = bl.id
+            JOIN pl_player_sessions tps ON tps.id = bl.target_player_session_id AND tps.is_alive = 0
+            GROUP BY bl.player_session_id
+        ");
+        $killStmt->execute([$sessionId]);
+        $kills = $killStmt->fetchAll(PDO::FETCH_KEY_PAIR);
 
-            // Damage taken
-            $dtStmt = $this->db->prepare("
-                SELECT COALESCE(SUM(damage_dealt), 0) FROM pl_battle_logs WHERE target_player_session_id = ?
-            ");
-            $dtStmt->execute([$player['id']]);
-            $damageTaken = (int)$dtStmt->fetchColumn();
+        // Disiapkan sekali, dipakai ulang untuk tiap player
+        $statStmt = $this->db->prepare("
+            INSERT INTO pl_player_stats
+                (user_id, total_match, total_win, total_lose, total_damage_given, total_damage_taken, total_kill, total_death)
+            VALUES (?, 1, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                total_match        = total_match + 1,
+                total_win          = total_win + VALUES(total_win),
+                total_lose         = total_lose + VALUES(total_lose),
+                total_damage_given = total_damage_given + VALUES(total_damage_given),
+                total_damage_taken = total_damage_taken + VALUES(total_damage_taken),
+                total_kill         = total_kill + VALUES(total_kill),
+                total_death        = total_death + VALUES(total_death)
+        ");
+        $pickStmt = $this->db->prepare("
+            INSERT INTO pl_role_pick_stats (user_id, pl_role_id, pick_count)
+            VALUES (?, ?, 1)
+            ON DUPLICATE KEY UPDATE pick_count = pick_count + 1
+        ");
 
-            // Kills = opponent players killed where this player dealt last blow
-            $killStmt = $this->db->prepare("
-                SELECT COUNT(DISTINCT bl.target_player_session_id)
-                FROM pl_battle_logs bl
-                JOIN pl_player_sessions tps ON bl.target_player_session_id = tps.id
-                WHERE bl.player_session_id = ?
-                  AND bl.action_type = 'attack'
-                  AND tps.is_alive = 0
-            ");
-            $killStmt->execute([$player['id']]);
-            $kills = (int)$killStmt->fetchColumn();
-
-            $isDead = $player['is_alive'] ? 0 : 1;
-
-            // Upsert lifetime stats
-            $this->db->prepare("
-                INSERT INTO pl_player_stats
-                    (user_id, total_match, total_win, total_lose, total_damage_given, total_damage_taken, total_kill, total_death)
-                VALUES (?, 1, ?, ?, ?, ?, ?, ?)
-                ON DUPLICATE KEY UPDATE
-                    total_match        = total_match + 1,
-                    total_win          = total_win + VALUES(total_win),
-                    total_lose         = total_lose + VALUES(total_lose),
-                    total_damage_given = total_damage_given + VALUES(total_damage_given),
-                    total_damage_taken = total_damage_taken + VALUES(total_damage_taken),
-                    total_kill         = total_kill + VALUES(total_kill),
-                    total_death        = total_death + VALUES(total_death)
-            ")->execute([$player['user_id'], $isWin, $isLose, $damageGiven, $damageTaken, $kills, $isDead]);
-
-            // Update role pick stats
-            if ($player['pl_role_id']) {
-                $this->db->prepare("
-                    INSERT INTO pl_role_pick_stats (user_id, pl_role_id, pick_count)
-                    VALUES (?, ?, 1)
-                    ON DUPLICATE KEY UPDATE pick_count = pick_count + 1
-                ")->execute([$player['user_id'], $player['pl_role_id']]);
+        $this->db->beginTransaction();
+        try {
+            foreach ($players as $player) {
+                $isWin = ($player['team'] === $winner) ? 1 : 0;
+                $statStmt->execute([
+                    $player['user_id'],
+                    $isWin,
+                    1 - $isWin,
+                    (int)($damage[$player['id']]['damage_given'] ?? 0),
+                    (int)($damage[$player['id']]['damage_taken'] ?? 0),
+                    (int)($kills[$player['id']] ?? 0),
+                    $player['is_alive'] ? 0 : 1,
+                ]);
+                if ($player['pl_role_id']) {
+                    $pickStmt->execute([$player['user_id'], $player['pl_role_id']]);
+                }
             }
+            $this->db->commit();
+        } catch (\PDOException $e) {
+            $this->db->rollBack();
+            throw $e;
         }
     }
 
@@ -622,9 +665,9 @@ class PilarLegendsModel
 
     // ===== STATE / POLLING =====
 
-    public function getFullGameState($sessionId): array
+    public function getFullGameState($sessionId, ?array $session = null): array
     {
-        $session = $this->getSessionById($sessionId);
+        $session = $session ?? $this->getSessionById($sessionId);
         if (!$session) {
             return ['error' => 'Session not found'];
         }
@@ -651,10 +694,8 @@ class PilarLegendsModel
         $logStmt->execute([$sessionId]);
         $battleLogs = $logStmt->fetchAll();
 
-        // GM name
-        $gmStmt = $this->db->prepare("SELECT name FROM users WHERE id = ?");
-        $gmStmt->execute([$session['game_master_user_id']]);
-        $gmName = $gmStmt->fetchColumn();
+        // GM name (sudah ikut di-JOIN oleh getSessionById)
+        $gmName = $session['gm_name'] ?? null;
 
         // Timers
         $turnTimerRemaining = null;
@@ -679,9 +720,6 @@ class PilarLegendsModel
         $teamA = array_values(array_filter($players, fn($p) => $p['team'] === 'A'));
         $teamB = array_values(array_filter($players, fn($p) => $p['team'] === 'B'));
 
-        // All available roles
-        $allRoles = $this->getAllRoles();
-
         return [
             'session'                    => $session,
             'gm_name'                    => $gmName,
@@ -692,7 +730,6 @@ class PilarLegendsModel
             'battle_logs'                => $battleLogs,
             'turn_timer_remaining'       => $turnTimerRemaining,
             'discussion_timer_remaining' => $discussionTimerRemaining,
-            'all_roles'                  => $allRoles,
             'timestamp'                  => time(),
         ];
     }
@@ -719,21 +756,19 @@ class PilarLegendsModel
 
     public function finishGame($sessionId, $winnerTeam = null): bool
     {
-        if (!$winnerTeam) {
-            $winnerTeam = $this->checkWinner($sessionId);
-        }
+        $winnerTeam = in_array($winnerTeam, ['A', 'B'], true) ? $winnerTeam : $this->checkWinner($sessionId);
 
         $stmt = $this->db->prepare("
-            UPDATE pl_game_sessions
-            SET status = 'finished', winner_team = ?
-            WHERE id = ?
-        ");
-        $result = $stmt->execute([$winnerTeam, $sessionId]);
+        UPDATE pl_game_sessions
+        SET status = 'finished', winner_team = ?
+        WHERE id = ? AND status != 'finished'
+    ");
+        $stmt->execute([$winnerTeam, $sessionId]);
 
-        if ($result) {
-            $this->updateLifetimeStats($sessionId);
+        if ($stmt->rowCount() === 0) {
+            return false;
         }
-
-        return $result;
+        $this->updateLifetimeStats($sessionId);
+        return true;
     }
 }

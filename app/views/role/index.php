@@ -27,31 +27,33 @@
                 <tr>
                   <td colspan="3" class="text-center text-muted py-4">Belum ada role terdaftar.</td>
                 </tr>
-              <?php else: foreach ($roles as $role): ?>
-                <tr class="<?= ($editRole && $editRole['id'] == $role['id']) ? 'table-primary bg-opacity-10' : '' ?>">
-                  <td class="text-center text-muted fw-bold">#<?= $role['id'] ?></td>
-                  <td>
-                    <span class="fw-bold text-dark"><?= htmlspecialchars($role['name']) ?></span>
-                    <?php if ($role['id'] == 1 || $role['id'] == 2): ?>
-                      <span class="badge bg-primary bg-opacity-10 text-primary ms-2"><i class="bi bi-shield-fill-check"></i> System Default</span>
-                    <?php endif; ?>
-                  </td>
-                  <td class="text-center">
-                    <div class="btn-group">
-                      <a href="<?= BASE_URL ?>/manage-role?edit_id=<?= $role['id'] ?>" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-pencil-square"></i> Edit
-                      </a>
-                      <?php if ($role['id'] != 1 && $role['id'] != 2): ?>
-                        <a href="<?= BASE_URL ?>/manage-role?action=delete&id=<?= $role['id'] ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus role ini? User yang tergabung ke role ini tidak akan terhapus, namun relasi role akan hilang.')">
-                          <i class="bi bi-trash"></i> Hapus
-                        </a>
-                      <?php else: ?>
-                        <button class="btn btn-outline-secondary btn-sm" disabled><i class="bi bi-lock-fill"></i> Terkunci</button>
+                <?php else: foreach ($roles as $role): ?>
+                  <tr class="<?= ($editRole && $editRole['id'] == $role['id']) ? 'table-primary bg-opacity-10' : '' ?>">
+                    <td class="text-center text-muted fw-bold">#<?= $role['id'] ?></td>
+                    <td>
+                      <span class="fw-bold text-dark"><?= htmlspecialchars($role['name']) ?></span>
+                      <?php if ($role['id'] == 1 || $role['id'] == 2): ?>
+                        <span class="badge bg-primary bg-opacity-10 text-primary ms-2"><i class="bi bi-shield-fill-check"></i> System Default</span>
                       <?php endif; ?>
-                    </div>
-                  </td>
-                </tr>
-              <?php endforeach; endif; ?>
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group">
+                        <a href="<?= BASE_URL ?>/manage-role?edit_id=<?= $role['id'] ?>" class="btn btn-outline-secondary btn-sm">
+                          <i class="bi bi-pencil-square"></i> Edit
+                        </a>
+                        <?php if ($role['id'] != 1 && $role['id'] != 2): ?>
+                          <form action="<?= BASE_URL ?>/manage-role?action=delete&id=<?= $role['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus role ini? User yang tergabung ke role ini tidak akan terhapus, namun relasi role akan hilang.')">
+                            <?= csrf_field() ?>
+                            <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Hapus</button>
+                          </form>
+                        <?php else: ?>
+                          <button class="btn btn-outline-secondary btn-sm" disabled><i class="bi bi-lock-fill"></i> Terkunci</button>
+                        <?php endif; ?>
+                      </div>
+                    </td>
+                  </tr>
+              <?php endforeach;
+              endif; ?>
             </tbody>
           </table>
         </div>
@@ -68,6 +70,7 @@
           <p class="text-muted small">Perbarui nama role terpilih</p>
 
           <form action="<?= BASE_URL ?>/manage-role?action=update&id=<?= $editRole['id'] ?>" method="POST">
+            <?= csrf_field() ?>
             <div class="mb-4">
               <label for="role_name" class="form-label small fw-bold">Nama Role</label>
               <input type="text" class="form-control" id="role_name" name="name" value="<?= htmlspecialchars($editRole['name']) ?>" required autofocus>
@@ -88,6 +91,7 @@
           <p class="text-muted small">Buat level hak akses atau peran baru dalam database</p>
 
           <form action="<?= BASE_URL ?>/manage-role?action=save" method="POST">
+            <?= csrf_field() ?>
             <div class="mb-4">
               <label for="role_name" class="form-label small fw-bold">Nama Role</label>
               <input type="text" class="form-control" id="role_name" name="name" placeholder="Masukkan nama role baru" required>

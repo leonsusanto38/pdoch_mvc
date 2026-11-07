@@ -1,6 +1,13 @@
 <?php
-// Define global BASE_URL constant
-define('BASE_URL', 'http://192.168.7.144:8080/pdoch');
+// Muat konfigurasi lokal (config.php tidak ikut di-push)
+$configFile = __DIR__ . '/config.php';
+if (!file_exists($configFile)) {
+    die('config.php belum ada. Salin config.example.php menjadi config.php lalu sesuaikan isinya.');
+}
+define('APP_CONFIG', require $configFile);
+define('BASE_URL', APP_CONFIG['base_url']);
+
+date_default_timezone_set('Asia/Jakarta');
 
 // Register PSR-4 Autoloader
 spl_autoload_register(function ($class) {
@@ -19,6 +26,17 @@ spl_autoload_register(function ($class) {
         require $file;
     }
 });
+
+// Helper global untuk view
+function csrf_token(): string
+{
+    return \App\Core\Session::csrfToken();
+}
+
+function csrf_field(): string
+{
+    return '<input type="hidden" name="csrf_token" value="' . csrf_token() . '">';
+}
 
 // Boot the application
 new App\Core\App();

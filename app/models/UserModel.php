@@ -31,17 +31,27 @@ class UserModel
 
     public function getAll()
     {
-        $sql = "SELECT u.*, c.name as church_name 
-                FROM users u 
-                LEFT JOIN churchs c ON u.id_church = c.id
-                ORDER BY u.name ASC";
-        $stmt = $this->db->query($sql);
-        $users = $stmt->fetchAll();
+        $users = $this->db->query("
+            SELECT u.*, c.name AS church_name
+            FROM users u
+            LEFT JOIN churchs c ON u.id_church = c.id
+            ORDER BY u.name ASC
+        ")->fetchAll();
 
-        // Attach roles for each user
-        foreach ($users as &$user) {
-            $user['roles'] = $this->getRoles($user['id']);
+        $rolesByUser = [];
+        $rows = $this->db->query("
+            SELECT ur.id_user, r.*
+            FROM user_role ur
+            JOIN roles r ON r.id = ur.id_role
+        ")->fetchAll();
+        foreach ($rows as $row) {
+            $rolesByUser[$row['id_user']][] = $row;
         }
+
+        foreach ($users as &$user) {
+            $user['roles'] = $rolesByUser[$user['id']] ?? [];
+        }
+        unset($user);
         return $users;
     }
 
@@ -120,15 +130,25 @@ class UserModel
         return $stmt->execute([$hashed, $id]);
     }
 
+    public function usernameExists($username, $excludeId = 0): bool
+    {
+        $stmt = $this->db->prepare("SELECT 1 FROM users WHERE username = ? AND id <> ? LIMIT 1");
+        $stmt->execute([$username, (int)$excludeId]);
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function delete($id)
     {
-        // First, delete related user roles
-        $stmt = $this->db->prepare("DELETE FROM user_role WHERE id_user = ?");
-        $stmt->execute([$id]);
-
-        // Then delete the user
-        $stmt = $this->db->prepare("DELETE FROM users WHERE id = ?");
-        return $stmt->execute([$id]);
+        try {
+            $this->db->beginTransaction();
+            $this->db->prepare("DELETE FROM user_role WHERE id_user = ?")->execute([$id]);
+            $this->db->prepare("DELETE FROM users WHERE id = ?")->execute([$id]);
+            $this->db->commit();
+            return true;
+        } catch (\PDOException $e) {
+            $this->db->rollBack();
+            return false;
+        }
     }
 
     public function getRoles($userId)

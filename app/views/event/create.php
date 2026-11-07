@@ -8,6 +8,7 @@
 <div class="card border-0 shadow-sm bg-white p-4">
   <div class="card-body">
     <form action="<?= BASE_URL ?>/manage-event?action=save" method="POST">
+      <?= csrf_field() ?>
       <div class="row g-3">
         <div class="col-12">
           <label for="name" class="form-label small fw-bold">Nama Event / Ibadah</label>

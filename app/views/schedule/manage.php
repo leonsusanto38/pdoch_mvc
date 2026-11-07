@@ -29,50 +29,53 @@
         <tr>
           <td colspan="8" class="text-center text-muted py-4">Belum ada jadwal. Tambahkan jadwal baru.</td>
         </tr>
-      <?php else: $no = 1; foreach ($schedules as $s): 
-        $ts = strtotime($s['date']);
-        $dayNames = ['Sunday'=>'Minggu','Monday'=>'Senin','Tuesday'=>'Selasa','Wednesday'=>'Rabu','Thursday'=>'Kamis','Friday'=>'Jumat','Saturday'=>'Sabtu'];
-        $dayIndo = $dayNames[date('l', $ts)] ?? date('l', $ts);
-        $isPast = $ts < strtotime('today');
-      ?>
-        <tr class="<?= $isPast ? 'text-muted bg-light' : '' ?>">
-          <td class="text-center fw-bold text-muted"><?= $no++ ?></td>
-          <td>
-            <span class="badge <?= $s['type'] === 'pelayanan' ? 'bg-primary' : 'bg-warning text-dark' ?>">
-              <?= ucfirst($s['type']) ?>
-            </span>
-          </td>
-          <td>
-            <span class="fw-bold"><?= $dayIndo ?>, <?= date('d M Y', $ts) ?></span>
-          </td>
-          <td>
-            <span class="fw-bold"><?= htmlspecialchars($s['user_name']) ?></span><br>
-            <span class="small text-muted">@<?= htmlspecialchars($s['user_username']) ?></span>
-          </td>
-          <td>
-            <span class="text-dark fw-bold"><?= htmlspecialchars($s['role']) ?></span>
-            <?php if ($s['description']): ?>
-              <span class="d-block small text-muted"><?= htmlspecialchars($s['description']) ?></span>
-            <?php endif; ?>
-          </td>
-          <td>
-            <span class="small"><?= htmlspecialchars($s['location'] ?? '-') ?></span>
-          </td>
-          <td>
-            <span class="small text-muted"><?= htmlspecialchars($s['notes'] ?? '-') ?></span>
-          </td>
-          <td class="text-center">
-            <div class="btn-group">
-              <a href="<?= BASE_URL ?>/manage-schedule?action=edit&id=<?= $s['id'] ?>" class="btn btn-outline-secondary btn-sm" title="Edit">
-                <i class="bi bi-pencil-square"></i>
-              </a>
-              <a href="<?= BASE_URL ?>/manage-schedule?action=delete&id=<?= $s['id'] ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Hapus jadwal ini?')" title="Hapus">
-                <i class="bi bi-trash"></i>
-              </a>
-            </div>
-          </td>
-        </tr>
-      <?php endforeach; endif; ?>
+        <?php else: $no = 1;
+        foreach ($schedules as $s):
+          $ts = strtotime($s['date']);
+          $dayNames = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
+          $dayIndo = $dayNames[date('l', $ts)] ?? date('l', $ts);
+          $isPast = $ts < strtotime('today');
+        ?>
+          <tr class="<?= $isPast ? 'text-muted bg-light' : '' ?>">
+            <td class="text-center fw-bold text-muted"><?= $no++ ?></td>
+            <td>
+              <span class="badge <?= $s['type'] === 'pelayanan' ? 'bg-primary' : 'bg-warning text-dark' ?>">
+                <?= ucfirst($s['type']) ?>
+              </span>
+            </td>
+            <td>
+              <span class="fw-bold"><?= $dayIndo ?>, <?= date('d M Y', $ts) ?></span>
+            </td>
+            <td>
+              <span class="fw-bold"><?= htmlspecialchars($s['user_name']) ?></span><br>
+              <span class="small text-muted">@<?= htmlspecialchars($s['user_username']) ?></span>
+            </td>
+            <td>
+              <span class="text-dark fw-bold"><?= htmlspecialchars($s['role']) ?></span>
+              <?php if ($s['description']): ?>
+                <span class="d-block small text-muted"><?= htmlspecialchars($s['description']) ?></span>
+              <?php endif; ?>
+            </td>
+            <td>
+              <span class="small"><?= htmlspecialchars($s['location'] ?? '-') ?></span>
+            </td>
+            <td>
+              <span class="small text-muted"><?= htmlspecialchars($s['notes'] ?? '-') ?></span>
+            </td>
+            <td class="text-center">
+              <div class="btn-group">
+                <a href="<?= BASE_URL ?>/manage-schedule?action=edit&id=<?= $s['id'] ?>" class="btn btn-outline-secondary btn-sm" title="Edit">
+                  <i class="bi bi-pencil-square"></i>
+                </a>
+                <form action="<?= BASE_URL ?>/manage-schedule?action=delete&id=<?= $s['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Hapus jadwal ini?')">
+                  <?= csrf_field() ?>
+                  <button type="submit" class="btn btn-outline-danger btn-sm" title="Hapus"><i class="bi bi-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+      <?php endforeach;
+      endif; ?>
     </tbody>
   </table>
 </div>

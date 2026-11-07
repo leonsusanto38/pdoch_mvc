@@ -1,20 +1,25 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Session;
+use App\Core\Upload;
 
-class ProfileController extends Controller {
+class ProfileController extends Controller
+{
     private $userModel;
     private $churchModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         Session::requireLogin();
         $this->userModel = $this->model('UserModel');
         $this->churchModel = $this->model('ChurchModel');
     }
 
-    public function index() {
+    public function index()
+    {
         $userId = Session::get('user_id');
         $user = $this->userModel->getById($userId);
         $churches = $this->churchModel->getAll();
@@ -25,7 +30,8 @@ class ProfileController extends Controller {
         ]);
     }
 
-    public function update() {
+    public function update()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('profile');
         }
@@ -46,53 +52,21 @@ class ProfileController extends Controller {
             $this->redirect('profile');
         }
 
+        if ($this->userModel->usernameExists($username, $userId)) {
+            Session::setFlash('error', 'Username sudah digunakan oleh user lain.');
+            $this->redirect('profile');
+        }
+
         // Handle Image Upload
         $imageName = $user['image']; // Keep old image by default
-        
-        if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
-            $fileTmpPath = $_FILES['image']['tmp_name'];
-            $fileName = $_FILES['image']['name'];
-            $fileSize = $_FILES['image']['size'];
-            $fileType = $_FILES['image']['type'];
-            
-            $fileNameCmps = explode(".", $fileName);
-            $fileExtension = strtolower(end($fileNameCmps));
-            
-            $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif'];
-            
-            if (in_array($fileExtension, $allowedExtensions)) {
-                if ($fileSize <= 2 * 1024 * 1024) { // Max 2MB
-                    // Unique file name
-                    $newFileName = 'user_' . $userId . '_' . time() . '.' . $fileExtension;
-                    
-                    $uploadFileDir = __DIR__ . '/../../assets/uploads/';
-                    
-                    // Create directory if not exists
-                    if (!is_dir($uploadFileDir)) {
-                        mkdir($uploadFileDir, 0755, true);
-                    }
-                    
-                    $dest_path = $uploadFileDir . $newFileName;
-                    
-                    if (move_uploaded_file($fileTmpPath, $dest_path)) {
-                        // Delete old profile image if it exists and is not a default
-                        if ($user['image'] && file_exists($uploadFileDir . $user['image'])) {
-                            unlink($uploadFileDir . $user['image']);
-                        }
-                        $imageName = $newFileName;
-                        Session::set('image', $newFileName); // Update image in session
-                    } else {
-                        Session::setFlash('error', 'Terjadi kesalahan saat memindahkan file.');
-                        $this->redirect('profile');
-                    }
-                } else {
-                    Session::setFlash('error', 'Ukuran file terlalu besar. Maksimal 2MB.');
-                    $this->redirect('profile');
-                }
-            } else {
-                Session::setFlash('error', 'Format file tidak didukung. Gunakan JPG, JPEG, PNG, atau GIF.');
-                $this->redirect('profile');
-            }
+        try {
+            $newImage = Upload::image('image', 'user_' . $userId);
+        } catch (\RuntimeException $e) {
+            Session::setFlash('error', $e->getMessage());
+            $this->redirect('profile');
+        }
+        if ($newImage) {
+            $imageName = $newImage;
         }
 
         // Update database
@@ -112,6 +86,10 @@ class ProfileController extends Controller {
         if ($this->userModel->update($userId, $updateData)) {
             Session::set('name', $name); // Update name in session
             Session::set('username', $username); // Update username in session
+            if ($newImage) {
+                Upload::delete($user['image']);   // hapus foto lama setelah DB sukses
+                Session::set('image', $newImage);
+            }
             Session::setFlash('success', 'Profil Anda berhasil diperbarui.');
         } else {
             Session::setFlash('error', 'Gagal memperbarui profil.');
@@ -120,7 +98,8 @@ class ProfileController extends Controller {
         $this->redirect('profile');
     }
 
-    public function changePassword() {
+    public function changePassword()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('profile');
         }
@@ -161,7 +140,8 @@ class ProfileController extends Controller {
         $this->redirect('profile');
     }
 
-    public function myDivisions() {
+    public function myDivisions()
+    {
         $userId = Session::get('user_id');
         $divisions = $this->userModel->getDivisions($userId);
 

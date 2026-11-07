@@ -1,19 +1,23 @@
 <?php
+
 namespace App\Core;
 
 use PDO;
 use PDOException;
 
-class Database {
+class Database
+{
     private static $instance = null;
     private $pdo;
 
-    private function __construct() {
-        $host = 'localhost';
-        $db   = 'pdoch';
-        $user = 'root';
-        $pass = '';
-        $charset = 'utf8mb4';
+    private function __construct()
+    {
+        $cfg     = APP_CONFIG['db'];
+        $host    = $cfg['host'];
+        $db      = $cfg['name'];
+        $user    = $cfg['user'];
+        $pass    = $cfg['pass'];
+        $charset = $cfg['charset'];
 
         $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
         $options = [
@@ -24,24 +28,27 @@ class Database {
 
         try {
             $this->pdo = new PDO($dsn, $user, $pass, $options);
-            $this->autoSeed();
+            $this->pdo->exec("SET time_zone = '+07:00'");
         } catch (PDOException $e) {
             throw new PDOException($e->getMessage(), (int)$e->getCode());
         }
     }
 
-    public static function getInstance() {
+    public static function getInstance()
+    {
         if (self::$instance === null) {
             self::$instance = new self();
         }
         return self::$instance;
     }
 
-    public function getConnection() {
+    public function getConnection()
+    {
         return $this->pdo;
     }
 
-    private function autoSeed() {
+    private function autoSeed()
+    {
         // Check if users table is empty
         $stmt = $this->pdo->query("SELECT COUNT(*) FROM users");
         $count = $stmt->fetchColumn();
@@ -76,9 +83,9 @@ class Database {
         ");
 
         // 4. Seed Users
-        // Passwords: admin -> admin123, user -> user123
-        $adminPassword = password_hash('admin123', PASSWORD_BCRYPT);
-        $userPassword = password_hash('user123', PASSWORD_BCRYPT);
+        // Password awal diambil dari config.php
+        $adminPassword = password_hash(APP_CONFIG['seed']['admin_password'], PASSWORD_BCRYPT);
+        $userPassword  = password_hash(APP_CONFIG['seed']['user_password'], PASSWORD_BCRYPT);
 
         $this->pdo->exec("INSERT INTO users (id, id_church, name, username, password, gender, status, id_user_created) VALUES 
             (1, 1, 'Admin PDOCH', 'admin', '{$adminPassword}', 'M', 'active', 1),

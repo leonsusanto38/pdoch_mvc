@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -106,7 +107,7 @@ class PilarLegendsRoleController extends Controller
         if ($this->roleModel->delete($id)) {
             Session::setFlash('success', 'Role berhasil dihapus.');
         } else {
-            Session::setFlash('error', 'Gagal menghapus role. Mungkin role sedang digunakan dalam sesi game aktif.');
+            Session::setFlash('error', 'Gagal menghapus role. Role ini sedang atau pernah dipakai di sesi game, jadi tidak bisa dihapus.');
         }
 
         $this->redirect('manage-pl-roles');

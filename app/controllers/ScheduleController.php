@@ -1,35 +1,32 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Session;
 
-class ScheduleController extends Controller {
+class ScheduleController extends Controller
+{
     private $scheduleModel;
     private $userModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         Session::requireLogin();
         $this->scheduleModel = $this->model('ServiceScheduleModel');
         $this->userModel = $this->model('UserModel');
     }
 
     // General user view for outstanding schedules
-    public function index() {
+    public function index()
+    {
         $userId = Session::get('user_id');
-        $mySchedules = $this->scheduleModel->getOutstandingByUser($userId);
-        
-        // Fetch all outstanding schedules so users know the full list of who is serving
-        $db = \App\Core\Database::getInstance()->getConnection();
-        $stmt = $db->prepare("
-            SELECT s.*, u.name as user_name, u.username as user_username
-            FROM service_schedules s
-            JOIN users u ON s.user_id = u.id
-            WHERE s.date >= CURDATE()
-            ORDER BY s.date ASC, s.type DESC
-        ");
-        $stmt->execute();
-        $allOutstanding = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        // 1 query untuk semua jadwal mendatang, lalu jadwal milik user disaring di PHP
+        $allOutstanding = $this->scheduleModel->getAllOutstanding();
+        $mySchedules = array_values(array_filter(
+            $allOutstanding,
+            fn($s) => (int)$s['user_id'] === (int)$userId
+        ));
 
         $this->view('schedule/index', [
             'mySchedules' => $mySchedules,
@@ -38,7 +35,8 @@ class ScheduleController extends Controller {
     }
 
     // Admin manage schedules
-    public function manage() {
+    public function manage()
+    {
         Session::requireAdmin();
         $schedules = $this->scheduleModel->getAll();
         $users = $this->userModel->getAll();
@@ -48,7 +46,8 @@ class ScheduleController extends Controller {
         ]);
     }
 
-    public function create() {
+    public function create()
+    {
         Session::requireAdmin();
         $users = $this->userModel->getAll();
         $this->view('schedule/create', [
@@ -56,7 +55,8 @@ class ScheduleController extends Controller {
         ]);
     }
 
-    public function save() {
+    public function save()
+    {
         Session::requireAdmin();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('manage-schedule');
@@ -93,7 +93,8 @@ class ScheduleController extends Controller {
         $this->redirect('manage-schedule');
     }
 
-    public function edit() {
+    public function edit()
+    {
         Session::requireAdmin();
         $id = $_GET['id'] ?? null;
         if (!$id) {
@@ -113,7 +114,8 @@ class ScheduleController extends Controller {
         ]);
     }
 
-    public function update() {
+    public function update()
+    {
         Session::requireAdmin();
         $id = $_GET['id'] ?? null;
         if (!$id || $_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -151,7 +153,8 @@ class ScheduleController extends Controller {
         $this->redirect('manage-schedule');
     }
 
-    public function delete() {
+    public function delete()
+    {
         Session::requireAdmin();
         $id = $_GET['id'] ?? null;
         if (!$id) {

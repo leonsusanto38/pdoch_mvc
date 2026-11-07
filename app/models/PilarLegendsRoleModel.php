@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Models;
 
 use App\Core\Database;
@@ -80,7 +81,12 @@ class PilarLegendsRoleModel
             return false;
         }
 
-        $stmt = $this->db->prepare("DELETE FROM pl_roles WHERE id = ?");
-        return $stmt->execute([$id]);
+        try {
+            $stmt = $this->db->prepare("DELETE FROM pl_roles WHERE id = ?");
+            return $stmt->execute([$id]);
+        } catch (\PDOException $e) {
+            // Role masih direferensikan pl_player_sessions (pernah dipakai di game)
+            return false;
+        }
     }
 }

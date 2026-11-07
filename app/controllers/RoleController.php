@@ -1,20 +1,24 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Session;
 
-class RoleController extends Controller {
+class RoleController extends Controller
+{
     private $roleModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         Session::requireAdmin();
         $this->roleModel = $this->model('RoleModel');
     }
 
-    public function index() {
+    public function index()
+    {
         $roles = $this->roleModel->getAll();
-        
+
         $editRole = null;
         $editId = $_GET['edit_id'] ?? null;
         if ($editId) {
@@ -27,7 +31,8 @@ class RoleController extends Controller {
         ]);
     }
 
-    public function save() {
+    public function save()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('manage-role');
         }
@@ -52,7 +57,8 @@ class RoleController extends Controller {
         $this->redirect('manage-role');
     }
 
-    public function update() {
+    public function update()
+    {
         $id = $_GET['id'] ?? null;
         if (!$id || $_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('manage-role');
@@ -62,6 +68,13 @@ class RoleController extends Controller {
         if (empty($name)) {
             Session::setFlash('error', 'Nama role wajib diisi.');
             $this->redirect('manage-role?edit_id=' . $id);
+        }
+
+        $protected   = ['Admin', 'Jemaat', 'Pelayan', 'Dewasa Muda'];
+        $currentRole = $this->roleModel->getById($id);
+        if ($currentRole && in_array($currentRole['name'], $protected, true) && $name !== $currentRole['name']) {
+            Session::setFlash('error', "Role '{$currentRole['name']}' dipakai sistem, namanya tidak boleh diubah.");
+            $this->redirect('manage-role');
         }
 
         $data = [
@@ -78,7 +91,8 @@ class RoleController extends Controller {
         $this->redirect('manage-role');
     }
 
-    public function delete() {
+    public function delete()
+    {
         $id = $_GET['id'] ?? null;
         if (!$id) {
             $this->redirect('manage-role');

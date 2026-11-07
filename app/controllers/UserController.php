@@ -1,36 +1,42 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Session;
 
-class UserController extends Controller {
+class UserController extends Controller
+{
     private $userModel;
     private $churchModel;
     private $roleModel;
 
-    public function __construct() {
+    public function __construct()
+    {
         Session::requireAdmin();
         $this->userModel = $this->model('UserModel');
         $this->churchModel = $this->model('ChurchModel');
         $this->roleModel = $this->model('RoleModel');
     }
 
-    public function index() {
+    public function index()
+    {
         $users = $this->userModel->getAll();
         $this->view('user/index', [
             'users' => $users
         ]);
     }
 
-    public function create() {
+    public function create()
+    {
         $churches = $this->churchModel->getAll();
         $this->view('user/create', [
             'churches' => $churches
         ]);
     }
 
-    public function save() {
+    public function save()
+    {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('manage-user');
         }
@@ -38,19 +44,16 @@ class UserController extends Controller {
         $username = trim($_POST['username'] ?? '');
         $password = $_POST['password'] ?? '';
         $name = trim($_POST['name'] ?? '');
-        
+
         if (empty($username) || empty($password) || empty($name)) {
             Session::setFlash('error', 'Nama, Username, dan Password wajib diisi.');
             $this->redirect('manage-user?action=create');
         }
 
         // Check if username is taken
-        $users = $this->userModel->getAll();
-        foreach ($users as $u) {
-            if ($u['username'] === $username) {
-                Session::setFlash('error', 'Username sudah digunakan oleh user lain.');
-                $this->redirect('manage-user?action=create');
-            }
+        if ($this->userModel->usernameExists($username)) {
+            Session::setFlash('error', 'Username sudah digunakan oleh user lain.');
+            $this->redirect('manage-user?action=create');
         }
 
         $data = [
@@ -79,7 +82,8 @@ class UserController extends Controller {
         $this->redirect('manage-user');
     }
 
-    public function edit() {
+    public function edit()
+    {
         $id = $_GET['id'] ?? null;
         if (!$id) {
             $this->redirect('manage-user');
@@ -99,7 +103,8 @@ class UserController extends Controller {
         ]);
     }
 
-    public function update() {
+    public function update()
+    {
         $id = $_GET['id'] ?? null;
         if (!$id || $_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('manage-user');
@@ -120,12 +125,9 @@ class UserController extends Controller {
         }
 
         // Check unique username (excluding itself)
-        $users = $this->userModel->getAll();
-        foreach ($users as $u) {
-            if ($u['username'] === $username && $u['id'] != $id) {
-                Session::setFlash('error', 'Username sudah digunakan oleh user lain.');
-                $this->redirect('manage-user?action=edit&id=' . $id);
-            }
+        if ($this->userModel->usernameExists($username, $id)) {
+            Session::setFlash('error', 'Username sudah digunakan oleh user lain.');
+            $this->redirect('manage-user?action=edit&id=' . $id);
         }
 
         $data = [
@@ -150,7 +152,8 @@ class UserController extends Controller {
         $this->redirect('manage-user');
     }
 
-    public function delete() {
+    public function delete()
+    {
         $id = $_GET['id'] ?? null;
         if (!$id) {
             $this->redirect('manage-user');
@@ -171,7 +174,8 @@ class UserController extends Controller {
         $this->redirect('manage-user');
     }
 
-    public function resetPassword() {
+    public function resetPassword()
+    {
         $id = $_GET['id'] ?? null;
         if (!$id) {
             $this->redirect('manage-user');
@@ -200,7 +204,8 @@ class UserController extends Controller {
         ]);
     }
 
-    public function roles() {
+    public function roles()
+    {
         $id = $_GET['id'] ?? null;
         if (!$id) {
             $this->redirect('manage-user');
@@ -214,7 +219,7 @@ class UserController extends Controller {
             $this->redirect('manage-user');
         }
 
-        $userRoleIds = array_map(function($r) {
+        $userRoleIds = array_map(function ($r) {
             return $r['id'];
         }, $user['roles']);
 
@@ -225,7 +230,8 @@ class UserController extends Controller {
         ]);
     }
 
-    public function updateRoles() {
+    public function updateRoles()
+    {
         $id = $_GET['id'] ?? null;
         if (!$id || $_SERVER['REQUEST_METHOD'] !== 'POST') {
             $this->redirect('manage-user');

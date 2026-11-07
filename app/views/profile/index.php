@@ -13,6 +13,7 @@
         <h5 class="fw-bold text-dark mb-4">Informasi Pribadi</h5>
 
         <form action="<?= BASE_URL ?>/profile?action=update" method="POST" enctype="multipart/form-data">
+          <?= csrf_field() ?>
           <!-- Profile Avatar Section -->
           <div class="text-center mb-4">
             <label for="image-upload" class="profile-avatar-container d-block" style="cursor: pointer;">
@@ -34,7 +35,7 @@
               <label for="name" class="form-label small fw-bold">Nama Lengkap</label>
               <input type="text" class="form-control" id="name" name="name" value="<?= htmlspecialchars($user['name']) ?>" required>
             </div>
-            
+
             <div class="col-md-6">
               <label for="username" class="form-label small fw-bold">Username</label>
               <input type="text" class="form-control" id="username" name="username" value="<?= htmlspecialchars($user['username']) ?>" required>
@@ -99,6 +100,7 @@
         <h5 class="fw-bold text-dark mb-4">Ganti Password</h5>
 
         <form action="<?= BASE_URL ?>/profile?action=change-password" method="POST">
+          <?= csrf_field() ?>
           <div class="mb-3">
             <label for="old_password" class="form-label small fw-bold">Password Lama</label>
             <input type="password" class="form-control" id="old_password" name="old_password" placeholder="Masukkan password lama" required>
@@ -124,12 +126,12 @@
 </div>
 
 <script>
-function previewImage(event) {
-  const reader = new FileReader();
-  reader.onload = function(){
-    const output = document.getElementById('avatar-preview');
-    output.src = reader.result;
-  };
-  reader.readAsDataURL(event.target.files[0]);
-}
+  function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function() {
+      const output = document.getElementById('avatar-preview');
+      output.src = reader.result;
+    };
+    reader.readAsDataURL(event.target.files[0]);
+  }
 </script>

@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -70,7 +71,7 @@ class PilarLegendsController extends Controller
         }
 
         $code = $plModel->createSession($userId);
-        Session::setFlash('success', "Sesi game berhasil dibuat! Kode: <strong>$code</strong>");
+        Session::setFlash('success', "Sesi game berhasil dibuat! Kode: $code");
         $this->redirect('pilar-legends?action=game-master');
     }
 
@@ -236,6 +237,14 @@ class PilarLegendsController extends Controller
             $this->jsonResponse(['error' => 'Not logged in'], 401);
         }
 
+        if (!Session::hasAnyRole(['Dewasa Muda', 'Admin'])) {
+            $this->jsonResponse(['error' => 'Forbidden'], 403);
+        }
+
+        // Session PHP tidak diubah di endpoint ini: lepas lock-nya
+        // supaya request lain dari user yang sama tidak menunggu
+        session_write_close();
+
         $sessionId = $_GET['session_id'] ?? null;
         if (!$sessionId) {
             $this->jsonResponse(['error' => 'No session ID'], 400);
@@ -248,10 +257,13 @@ class PilarLegendsController extends Controller
             $this->jsonResponse(['error' => 'Session not found'], 404);
         }
 
+        $changed = false;
+
         // Auto-skip check (battle turn timer)
         if ($session['status'] === 'battle' && $session['turn_timer_end']) {
             if (strtotime($session['turn_timer_end']) < time()) {
                 $plModel->autoSkipTurn($sessionId);
+                $changed = true;
             }
         }
 
@@ -259,10 +271,12 @@ class PilarLegendsController extends Controller
         if ($session['status'] === 'discussion_role' && $session['discussion_timer_end']) {
             if (strtotime($session['discussion_timer_end']) < time()) {
                 $plModel->autoAssignRoles($sessionId);
+                $changed = true;
             }
         }
 
-        $state = $plModel->getFullGameState($sessionId);
+        // Pakai ulang data sesi yang sudah dibaca, kecuali baru saja berubah
+        $state = $plModel->getFullGameState($sessionId, $changed ? null : $session);
         $this->jsonResponse($state);
     }
 
@@ -321,6 +335,14 @@ class PilarLegendsController extends Controller
         $active   = $plModel->getActiveSessionForUser($userId);
         if (!$active || (int)($active['player_session_id'] ?? 0) !== $playerSessionId) {
             $this->jsonResponse(['success' => false, 'message' => 'Unauthorized']);
+        }
+
+        if ($active['status'] !== 'discussion_role') {
+            $this->jsonResponse(['success' => false, 'message' => 'Role hanya bisa dipilih saat fase Diskusi Role.']);
+        }
+        $current = $plModel->getPlayerSession($userId, $active['id']);
+        if (!empty($current['pl_role_id'])) {
+            $this->jsonResponse(['success' => false, 'message' => 'Role sudah dikunci.']);
         }
 
         $result = $plModel->setPlayerRole($playerSessionId, $roleId);
@@ -428,6 +450,13 @@ class PilarLegendsController extends Controller
 
         if (!$data['session_id'] || !$data['player_session_id'] || empty($data['action_type'])) {
             $this->jsonResponse(['success' => false, 'message' => 'Data tidak lengkap.']);
+        }
+
+        if (!in_array($data['action_type'], ['move', 'attack', 'skip'], true)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Tipe aksi tidak valid.']);
+        }
+        if ($data['action_type'] === 'attack' && (!$data['target_session_id'] || $data['damage'] < 0)) {
+            $this->jsonResponse(['success' => false, 'message' => 'Attack butuh target, dan damage tidak boleh negatif.']);
         }
 
         $plModel = $this->model('PilarLegendsModel');

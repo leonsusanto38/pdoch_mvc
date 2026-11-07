@@ -8,6 +8,7 @@
 <div class="card border-0 shadow-sm bg-white p-4">
   <div class="card-body">
     <form action="<?= BASE_URL ?>/manage-schedule?action=update&id=<?= $schedule['id'] ?>" method="POST">
+      <?= csrf_field() ?>
       <div class="row g-3">
         <div class="col-md-6">
           <label for="user_id" class="form-label small fw-bold">Pelayan / Anggota Tim <span class="text-danger">*</span></label>

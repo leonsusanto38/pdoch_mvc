@@ -46,9 +46,10 @@
                         <a href="<?= BASE_URL ?>/manage-division?edit_id=<?= $div['id'] ?>" class="btn btn-outline-secondary btn-sm" title="Edit Divisi">
                           <i class="bi bi-pencil-square"></i>
                         </a>
-                        <a href="<?= BASE_URL ?>/manage-division?action=delete&id=<?= $div['id'] ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus divisi ini? Seluruh riwayat keanggotaan divisi ini juga akan dihapus.')" title="Hapus Divisi">
-                          <i class="bi bi-trash"></i>
-                        </a>
+                        <form action="<?= BASE_URL ?>/manage-division?action=delete&id=<?= $div['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus divisi ini? Seluruh riwayat keanggotaan divisi ini juga akan dihapus.')">
+                          <?= csrf_field() ?>
+                          <button type="submit" class="btn btn-outline-danger btn-sm" title="Hapus Divisi"><i class="bi bi-trash"></i></button>
+                        </form>
                       </div>
                     </td>
                   </tr>
@@ -70,6 +71,7 @@
           <p class="text-muted small">Perbarui data divisi pelayanan</p>
 
           <form action="<?= BASE_URL ?>/manage-division?action=update&id=<?= $editDiv['id'] ?>" method="POST">
+            <?= csrf_field() ?>
             <div class="mb-3">
               <label for="div_name" class="form-label small fw-bold">Nama Divisi</label>
               <input type="text" class="form-control" id="div_name" name="name" value="<?= htmlspecialchars($editDiv['name']) ?>" required autofocus>
@@ -104,6 +106,7 @@
           <p class="text-muted small">Buat kelompok pelayanan baru</p>
 
           <form action="<?= BASE_URL ?>/manage-division?action=save" method="POST">
+            <?= csrf_field() ?>
             <div class="mb-3">
               <label for="div_name" class="form-label small fw-bold">Nama Divisi</label>
               <input type="text" class="form-control" id="div_name" name="name" placeholder="Contoh: Musik & Pujian, Multimedia, dll." required>

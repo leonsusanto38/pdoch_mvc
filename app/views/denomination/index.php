@@ -27,24 +27,26 @@
                 <tr>
                   <td colspan="3" class="text-center text-muted py-4">Belum ada denominasi terdaftar.</td>
                 </tr>
-              <?php else: foreach ($denominations as $denom): ?>
-                <tr class="<?= ($editDenom && $editDenom['id'] == $denom['id']) ? 'table-primary bg-opacity-10' : '' ?>">
-                  <td class="text-center text-muted fw-bold">#<?= $denom['id'] ?></td>
-                  <td>
-                    <span class="fw-bold text-dark"><?= htmlspecialchars($denom['name']) ?></span>
-                  </td>
-                  <td class="text-center">
-                    <div class="btn-group">
-                      <a href="<?= BASE_URL ?>/manage-denomination?edit_id=<?= $denom['id'] ?>" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-pencil-square"></i> Edit
-                      </a>
-                      <a href="<?= BASE_URL ?>/manage-denomination?action=delete&id=<?= $denom['id'] ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('Apakah Anda yakin ingin menghapus denominasi ini? Gereja yang tergabung di denominasi ini tidak boleh ada agar bisa dihapus.')">
-                        <i class="bi bi-trash"></i> Hapus
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              <?php endforeach; endif; ?>
+                <?php else: foreach ($denominations as $denom): ?>
+                  <tr class="<?= ($editDenom && $editDenom['id'] == $denom['id']) ? 'table-primary bg-opacity-10' : '' ?>">
+                    <td class="text-center text-muted fw-bold">#<?= $denom['id'] ?></td>
+                    <td>
+                      <span class="fw-bold text-dark"><?= htmlspecialchars($denom['name']) ?></span>
+                    </td>
+                    <td class="text-center">
+                      <div class="btn-group">
+                        <a href="<?= BASE_URL ?>/manage-denomination?edit_id=<?= $denom['id'] ?>" class="btn btn-outline-secondary btn-sm">
+                          <i class="bi bi-pencil-square"></i> Edit
+                        </a>
+                        <form action="<?= BASE_URL ?>/manage-denomination?action=delete&id=<?= $denom['id'] ?>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus denominasi ini? Gereja yang tergabung di denominasi ini tidak boleh ada agar bisa dihapus.')">
+                          <?= csrf_field() ?>
+                          <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Hapus</button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+              <?php endforeach;
+              endif; ?>
             </tbody>
           </table>
         </div>
@@ -61,6 +63,7 @@
           <p class="text-muted small">Perbarui nama denominasi terpilih</p>
 
           <form action="<?= BASE_URL ?>/manage-denomination?action=update&id=<?= $editDenom['id'] ?>" method="POST">
+            <?= csrf_field() ?>
             <div class="mb-4">
               <label for="denom_name" class="form-label small fw-bold">Nama Denominasi</label>
               <input type="text" class="form-control" id="denom_name" name="name" value="<?= htmlspecialchars($editDenom['name']) ?>" required autofocus>
@@ -81,6 +84,7 @@
           <p class="text-muted small">Buat denominasi baru untuk dikaitkan dengan gereja asal</p>
 
           <form action="<?= BASE_URL ?>/manage-denomination?action=save" method="POST">
+            <?= csrf_field() ?>
             <div class="mb-4">
               <label for="denom_name" class="form-label small fw-bold">Nama Denominasi</label>
               <input type="text" class="form-control" id="denom_name" name="name" placeholder="Masukkan nama denominasi baru" required>

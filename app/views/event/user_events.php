@@ -119,6 +119,7 @@
 
                     <?php if ($isPicOrAdmin): ?>
                       <form action="<?= BASE_URL ?>/events?action=add-evaluation" method="POST" class="mt-2">
+                        <?= csrf_field() ?>
                         <input type="hidden" name="event_id" value="<?= $event['id'] ?>">
                         <div class="input-group input-group-sm">
                           <textarea class="form-control" name="evaluation" rows="2" placeholder="Tulis evaluasi event di sini..." required></textarea>
